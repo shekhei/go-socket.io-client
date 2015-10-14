@@ -1,9 +1,10 @@
 package socketio_client
 
 import (
+	"log"
 	"net/url"
-	"reflect"
 	"path"
+	"reflect"
 	"strings"
 )
 
@@ -29,10 +30,10 @@ func NewClient(uri string, opts *Options) (client *Client, err error) {
 	if err != nil {
 		return
 	}
-	url.Path = path.Join("/socket.io",url.Path)
+	url.Path = path.Join("/socket.io", url.Path)
 	url.Path = url.EscapedPath()
-	if strings.HasSuffix(url.Path,"socket.io"){
-		url.Path+="/"
+	if strings.HasSuffix(url.Path, "socket.io") {
+		url.Path += "/"
 	}
 	q := url.Query()
 	for k, v := range opts.Query {
@@ -143,9 +144,12 @@ func (client *Client) onPacket(decoder *decoder, packet *packet) ([]interface{},
 		message = "error"
 	case _ACK:
 	case _BINARY_ACK:
+		log.Printf("Ack received with packet.Id %s", packet.Id)
 		return nil, client.onAck(packet.Id, decoder, packet)
 	default:
+
 		message = decoder.Message()
+		log.Printf("What the fuck? %s", message)
 	}
 	c, ok := client.events[message]
 	if !ok {
