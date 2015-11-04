@@ -134,6 +134,7 @@ func (client *Client) send(args []interface{}) error {
 }
 
 func (client *Client) onPacket(decoder *decoder, packet *packet) ([]interface{}, error) {
+	log.Printf("Did we at least reach onPacket??? %v", packet.Type)
 	var message string
 	switch packet.Type {
 	case _CONNECT:
@@ -143,6 +144,7 @@ func (client *Client) onPacket(decoder *decoder, packet *packet) ([]interface{},
 	case _ERROR:
 		message = "error"
 	case _ACK:
+		fallthrough
 	case _BINARY_ACK:
 		log.Printf("Ack received with packet.Id %s", packet.Id)
 		return nil, client.onAck(packet.Id, decoder, packet)
@@ -188,8 +190,11 @@ func (client *Client) onPacket(decoder *decoder, packet *packet) ([]interface{},
 }
 
 func (client *Client) onAck(id int, decoder *decoder, packet *packet) error {
+	log.Printf("We reached onAck with %d", id)
 	c, ok := client.acks[id]
+
 	if !ok {
+		log.Printf("it is not ok....")
 		return nil
 	}
 	delete(client.acks, id)
@@ -197,8 +202,10 @@ func (client *Client) onAck(id int, decoder *decoder, packet *packet) error {
 	args := c.GetArgs()
 	packet.Data = &args
 	if err := decoder.DecodeData(packet); err != nil {
+		log.Printf("This fucking failed %v", err)
 		return err
 	}
+	log.Printf("we are going to call the callback now")
 	c.Call(args)
 	return nil
 }
@@ -218,6 +225,7 @@ func (client *Client) readLoop() error {
 		if err := decoder.Decode(&p); err != nil {
 			return err
 		}
+		log.Printf("reading the loop %t", p)
 		ret, err := client.onPacket(decoder, &p)
 		if err != nil {
 			return err
